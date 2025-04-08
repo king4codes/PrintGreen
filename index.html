@@ -272,7 +272,17 @@
       overflow: hidden;
       position: relative;
       box-shadow: var(--screen-glow);
-      transition: background-color 0.5s ease, box-shadow 0.5s ease;
+      transition: background-color 0.5s ease, box-shadow 0.5s ease, border 0.3s ease;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .video-container:hover {
+      border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+    
+    .video-container.holding {
+      border: 2px solid var(--accent);
     }
     
     .video-player {
@@ -2320,8 +2330,83 @@
       
       // Video player setup and controls
       const videoPlayer = document.querySelector('.video-player');
+      const videoContainer = document.querySelector('.video-container');
       const zoomBtn = document.getElementById('zoom-btn');
       const switchBtn = document.getElementById('switch-btn');
+      
+      // Video state
+      let isHoldingVideo = false;
+      let videoHoldTimer = null;
+      let autoSwitchInterval = null;
+      
+      // Start auto-switching videos
+      function startAutoSwitch() {
+        if (autoSwitchInterval) clearInterval(autoSwitchInterval);
+        autoSwitchInterval = setInterval(() => {
+          if (!isHoldingVideo) {
+            currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+            switchVideo(currentVideoIndex);
+          }
+        }, 10000); // Switch every 10 seconds
+      }
+      
+      // Switch to specific video
+      function switchVideo(index) {
+        videoPlayer.src = videos[index];
+        videoPlayer.load();
+        videoPlayer.play();
+        
+        // Visual feedback
+        createLeaves(3);
+        videoContainer.style.boxShadow = '0 0 20px rgba(76, 175, 80, 0.7)';
+        setTimeout(() => {
+          videoContainer.style.boxShadow = 'var(--screen-glow)';
+        }, 300);
+      }
+      
+      // Video container click handling
+      videoContainer.addEventListener('mousedown', () => {
+        videoHoldTimer = setTimeout(() => {
+          isHoldingVideo = !isHoldingVideo;
+          // Visual feedback
+          videoContainer.style.border = isHoldingVideo ? '2px solid var(--accent)' : '1px solid rgba(255, 255, 255, 0.05)';
+          createLeaves(isHoldingVideo ? 5 : 2);
+        }, 700); // 0.7 seconds hold time
+      });
+      
+      videoContainer.addEventListener('mouseup', () => {
+        if (videoHoldTimer) {
+          clearTimeout(videoHoldTimer);
+          // If it wasn't a hold, switch to next video
+          if (!isHoldingVideo) {
+            currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+            switchVideo(currentVideoIndex);
+          }
+        }
+      });
+      
+      videoContainer.addEventListener('mouseleave', () => {
+        if (videoHoldTimer) {
+          clearTimeout(videoHoldTimer);
+        }
+      });
+      
+      // Start auto-switching when page loads
+      startAutoSwitch();
+      
+      // Original switch button click handler
+      switchBtn.addEventListener('click', () => {
+        currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+        switchVideo(currentVideoIndex);
+        // Reset position and scale
+        currentPanX = 0;
+        currentTiltY = 0;
+        currentScale = ZOOM_MIN;
+        isZoomedIn = false;
+        updateTransform();
+        zoomBtn.style.transform = 'scale(1)';
+      });
+      
       const tiltUpBtn = document.getElementById('tilt-up');
       const tiltDownBtn = document.getElementById('tilt-down');
       const panLeftBtn = document.getElementById('pan-left');
