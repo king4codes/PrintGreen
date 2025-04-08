@@ -1,0 +1,3381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrintGreen - Organic Freerange Coins</title>
+  <style>
+    :root {
+      --bg-dark: #111111;
+      --bg-panel: #222222;
+      --accent: #4caf50;
+      --accent-light: #6fbf72;
+      --text-light: #f0f0f0;
+      --text-dim: #a0a0a0;
+      --knob-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      --screen-glow: 0 0 15px rgba(76, 175, 80, 0.225);
+      --inner-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+      
+      /* Theme variables */
+      --theme-bg-dark: #111111;
+      --theme-bg-panel: #222222;
+      --theme-screen-bg: #000000;
+      --theme-text-primary: #f0f0f0;
+      --theme-text-secondary: #a0a0a0;
+      --theme-shadow-color: rgba(0, 0, 0, 0.5);
+      --theme-accent-opacity: 1;
+      --theme-screen-overlay: rgba(76, 175, 80, 0.225);
+      --theme-scanline-color1: rgba(255,255,255,0.06);
+      --theme-scanline-color2: rgba(0,0,0,0.15);
+    }
+    
+    /* Light mode variables (will be applied via JS) */
+    body.light-mode {
+      --theme-bg-dark: #d8d5cb;
+      --theme-bg-panel: #cac6b8;
+      --theme-screen-bg: #d0dbd0;
+      --theme-text-primary: #333333;
+      --theme-text-secondary: #555555;
+      --theme-shadow-color: rgba(0, 0, 0, 0.25);
+      --theme-accent-opacity: 0.85;
+      --theme-screen-overlay: rgba(76, 175, 80, 0.15);
+      --theme-scanline-color1: rgba(0,100,0,0.08);
+      --theme-scanline-color2: rgba(0,0,0,0.12);
+    }
+    
+    /* Noise texture */
+    @keyframes noise {
+      0% { background-position: 0 0; transform: scale(1.03); }
+      25% { background-position: 25% 25%; transform: scale(1.02); }
+      50% { background-position: 50% 50%; transform: scale(1.01); }
+      75% { background-position: 75% 75%; transform: scale(1.02); }
+      100% { background-position: 100% 100%; transform: scale(1.03); }
+    }
+    
+    /* Scan line animation */
+    @keyframes scanlines {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 100%; }
+    }
+    
+    /* Scan line flicker */
+    @keyframes scanlineFlicker {
+      0% { opacity: 0.5; }
+      10% { opacity: 0.45; }
+      15% { opacity: 0.55; }
+      20% { opacity: 0.5; }
+      98% { opacity: 0.5; }
+      100% { opacity: 0.6; }
+    }
+    
+    /* Leaf fall animation - ENHANCED to be more visible */
+    @keyframes leafFall {
+      0% {
+        transform: translateY(-5%) rotate(0deg);
+        opacity: 0;
+      }
+      10% { opacity: 0.9; }
+      90% { opacity: 0.8; }
+      100% {
+        transform: translateY(105%) rotate(360deg);
+        opacity: 0;
+      }
+    }
+    
+    /* Pulse glow animation - ENHANCED to be more visible but reduced by 25% */
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 15px rgba(76, 175, 80, 0.225); }
+      50% { box-shadow: 0 0 30px rgba(76, 175, 80, 0.525); }
+      100% { box-shadow: 0 0 15px rgba(76, 175, 80, 0.225); }
+    }
+    
+    /* Button press animation */
+    @keyframes buttonPress {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+    
+    /* Ripple effect for dial */
+    @keyframes dialRipple {
+      0% {
+        box-shadow: 0 0 0 0px rgba(76, 175, 80, 0.3);
+        transform: scale(1);
+      }
+      100% {
+        box-shadow: 0 0 0 20px rgba(76, 175, 80, 0);
+        transform: scale(1.1);
+      }
+    }
+    
+    /* Digital pulse animation */
+    @keyframes digitalPulse {
+      0% { opacity: 0.8; }
+      50% { opacity: 1; }
+      100% { opacity: 0.8; }
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--theme-bg-dark);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--theme-text-primary);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      background-blend-mode: overlay;
+      transition: background-color 0.5s ease;
+    }
+    
+    .control-panel {
+      width: 1200px;
+      height: 860px; /* Increased height to make it longer */
+      background-color: var(--theme-bg-panel);
+      border-radius: 30px;
+      display: grid;
+      grid-template-columns: 360px 1fr 290px;
+      padding: 50px;
+      box-shadow: 0 15px 40px var(--theme-shadow-color), inset 0 0 2px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.03 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      transition: background-color 0.5s ease, box-shadow 0.5s ease;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .control-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    }
+    
+    /* Edge highlights for the panel */
+    .control-panel::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 30px;
+      box-shadow: var(--inner-shadow);
+      pointer-events: none;
+      border: 1px solid transparent;
+      border-image: linear-gradient(135deg, 
+        rgba(255,255,255,0.1) 0%, 
+        rgba(255,255,255,0.05) 25%, 
+        transparent 50%, 
+        rgba(0,0,0,0.1) 75%, 
+        rgba(0,0,0,0.2) 100%) 1;
+    }
+    
+    /* Light mode panel adjustments */
+    body.light-mode .control-panel {
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    body.light-mode .control-panel::before {
+      background: linear-gradient(90deg, transparent, rgba(0,0,0,0.07), transparent);
+    }
+    
+    body.light-mode .control-panel::after {
+      border-image: linear-gradient(135deg, 
+        rgba(255,255,255,0.5) 0%, 
+        rgba(255,255,255,0.2) 25%, 
+        transparent 50%, 
+        rgba(0,0,0,0.05) 75%, 
+        rgba(0,0,0,0.1) 100%) 1;
+    }
+    
+    /* Common screen elements */
+    .screen-effects {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+    
+    /* Scan lines */
+    .scan-lines {
+      background: linear-gradient(to bottom, 
+        var(--theme-scanline-color1) 50%, 
+        var(--theme-scanline-color2) 50%);
+      background-size: 100% 3px;
+      animation: 
+        scanlines 8s linear infinite,
+        scanlineFlicker 2s infinite;
+      opacity: 0.5;
+      transition: background 0.5s ease;
+      z-index: 3;
+    }
+    
+    /* Screen inner glow */
+    .inner-glow {
+      box-shadow: inset 0 0 15px var(--theme-screen-overlay);
+      opacity: 0.9;
+      transition: box-shadow 0.5s ease;
+    }
+    
+    /* Noise texture overlay */
+    .noise-texture {
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.15 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.12;
+      animation: noise 0.3s infinite;
+      background-size: 150%;
+    }
+    
+    /* Mesh pattern for backgrounds */
+    .mesh-pattern {
+      background-image: 
+        linear-gradient(rgba(0, 150, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 150, 0, 0.03) 1px, transparent 1px);
+      background-size: 20px 20px;
+      opacity: 0.2;
+    }
+    
+    /* Leaf objects for animation - ENHANCED to be more visible */
+    .falling-leaf {
+      position: absolute;
+      width: 25px;
+      height: 25px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234caf50' d='M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z'/%3E%3C/svg%3E");
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10;
+      filter: drop-shadow(0 0 3px rgba(76, 175, 80, 0.7));
+    }
+    
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      padding-right: 30px;
+    }
+    
+    .video-container {
+      width: 100%;
+      height: 300px;
+      background: var(--theme-screen-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--screen-glow);
+      transition: background-color 0.5s ease, box-shadow 0.5s ease;
+    }
+    
+    .video-player {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform-origin: center center;
+      transform: scale(1.1);
+      transition: transform 0.3s ease;
+      filter: brightness(1.05) contrast(1.1);
+      z-index: 1;
+      position: relative;
+    }
+    
+    .nav-buttons {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin: 10px 0;
+    }
+    
+    .nav-button {
+      height: 45px;
+      background-color: var(--theme-bg-panel);
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 16px;
+      user-select: none;
+      box-shadow: 0 2px 5px var(--theme-shadow-color), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .nav-button:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px var(--theme-shadow-color), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    }
+    
+    .nav-button:active {
+      animation: buttonPress 0.2s ease;
+    }
+    
+    .nav-button::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      transform: scale(0.5);
+      z-index: 0;
+    }
+    
+    .nav-button:hover::before {
+      opacity: 1;
+      transform: scale(1);
+    }
+    
+    .speaker {
+      width: 150px;
+      height: 150px;
+      margin: 20px auto;
+      background-color: #2a2a2a;
+      border-radius: 50%;
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      padding: 10px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5), 0 1px 1px rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .speaker::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0) 70%);
+    }
+    
+    .speaker-dot {
+      width: 4px;
+      height: 4px;
+      background-color: #444;
+      border-radius: 50%;
+      margin: auto;
+      transition: background-color 0.5s;
+    }
+    
+    .speaker-dot.active {
+      background-color: rgba(76, 175, 80, 0.6);
+    }
+    
+    .main-dial {
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle at 40% 40%, #555, #333);
+      border-radius: 50%;
+      margin: 20px auto;
+      position: relative;
+      box-shadow: var(--knob-shadow), inset 0 2px 3px rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      transition: all 0.3s;
+      overflow: visible;
+    }
+    
+    .main-dial::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      border-radius: 50%;
+      background: transparent;
+      z-index: -1;
+    }
+    
+    .main-dial:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 10px rgba(0, 0, 0, 0.6), inset 0 2px 3px rgba(255, 255, 255, 0.15);
+    }
+    
+    .main-dial::after {
+      content: '';
+      position: absolute;
+      width: 3px;
+      height: 40px;
+      background-color: var(--accent);
+      top: 15px;
+      left: 50%;
+      transform-origin: bottom center;
+      transform: translateX(-50%) rotate(210deg);
+      box-shadow: 0 0 5px rgba(76, 175, 80, 0.4);
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .version-selector {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      margin-top: 15px;
+      justify-content: center;
+    }
+    
+    .version {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .version:hover {
+      color: var(--text-light);
+      transform: translateY(-1px);
+    }
+    
+    .indicator {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background-color: #555;
+      position: relative;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s;
+    }
+    
+    .active .indicator {
+      background-color: var(--accent);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 8px rgba(76, 175, 80, 0.5);
+    }
+    
+    .active {
+      color: var(--text-light);
+    }
+    
+    .center-panel {
+      display: flex;
+      flex-direction: column;
+      padding: 0 30px;
+      gap: 30px; /* Added gap to space out elements in the taller panel */
+    }
+    
+    .main-display {
+      flex: 1;
+      background-color: var(--theme-screen-bg);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 30px;
+      box-shadow: var(--screen-glow), inset 0 0 40px rgba(0, 0, 0, 0.5);
+      transition: background-color 0.5s ease, box-shadow 0.5s ease;
+      border: 1px solid rgba(76, 175, 80, 0.15);
+      animation: crtFlicker 15s infinite;
+    }
+    
+    /* Screen effects for main display */
+    .main-display::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at center, var(--theme-screen-overlay) 0%, rgba(0, 0, 0, 0) 70%);
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(76, 175, 80, 0.1) 1px, transparent 1px);
+      background-size: 16px 16px;
+      opacity: 0.3;
+      z-index: 1;
+      pointer-events: none;
+      transition: background 0.5s ease;
+    }
+    
+    .main-display::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.4);
+      border-radius: inherit;
+      pointer-events: none;
+      z-index: 2;
+    }
+    
+    .logo-text {
+      font-size: 4rem;
+      font-weight: 300;
+      font-family: 'Times New Roman', serif;
+      font-style: italic;
+      margin: 0;
+      line-height: 1.2;
+      color: var(--accent);
+      position: relative;
+      z-index: 2;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3), 0 0 10px rgba(76, 175, 80, 0.375);
+    }
+    
+    .logo-text sup {
+      font-size: 1rem;
+      vertical-align: super;
+      position: relative;
+      top: -5px;
+    }
+    
+    .logo-text .byline {
+      position: absolute;
+      right: 15px;
+      bottom: 10px;
+      font-size: 0.8rem;
+      font-family: 'Courier New', monospace;
+      font-style: italic;
+      font-weight: bold;
+      color: #444444;
+      letter-spacing: 1px;
+      transform: translateY(50%);
+    }
+    
+    /* Light mode title text adjustments */
+    body.light-mode .logo-text {
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2), 0 0 10px rgba(76, 175, 80, 0.275);
+    }
+    
+    .tagline {
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-size: 16px;
+      color: var(--theme-text-primary);
+      margin-top: 30px;
+      font-weight: 500;
+      transition: color 0.5s ease;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 20px;
+      margin-top: 60px;
+    }
+    
+    .button {
+      padding: 12px 25px;
+      border-radius: 30px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s;
+      font-size: 16px;
+    }
+    
+    .button:hover {
+      transform: translateY(-2px);
+    }
+    
+    .primary-button {
+      background-color: #333;
+      color: var(--text-light);
+    }
+    
+    .secondary-button {
+      background-color: var(--accent);
+      color: #111;
+      font-weight: 500;
+    }
+    
+    .arrow {
+      width: 16px;
+      height: 16px;
+    }
+    
+    .control-strips {
+      display: flex;
+      gap: 2px;
+      margin-top: 5px;
+      margin-bottom: 0;
+      height: 32px;
+      width: 70%;
+      margin-left: auto;
+      margin-right: auto;
+      position: relative;
+      z-index: 5;
+    }
+    
+    .control-strip {
+      flex: 1;
+      background-color: var(--theme-bg-panel);
+      color: var(--accent-light);
+      height: 100%;
+      border-radius: 3px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: hidden;
+      font-size: 14px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      box-shadow: 
+        2px 2px 3px rgba(0, 0, 0, 0.2),
+        -1px -1px 3px rgba(255, 255, 255, 0.05),
+        inset 0px 0px 0px rgba(0, 0, 0, 0);
+    }
+    
+    .control-strip:hover {
+      background-color: rgba(76, 175, 80, 0.1);
+      color: var(--accent);
+      box-shadow: 
+        1px 1px 2px rgba(0, 0, 0, 0.2),
+        -1px -1px 2px rgba(255, 255, 255, 0.05),
+        inset 0px 0px 0px rgba(0, 0, 0, 0);
+    }
+    
+    .control-strip:active, .control-strip.active {
+      background-color: rgba(76, 175, 80, 0.2);
+      color: var(--accent);
+      box-shadow: 
+        0px 0px 0px rgba(0, 0, 0, 0),
+        0px 0px 0px rgba(255, 255, 255, 0),
+        inset 2px 2px 3px rgba(0, 0, 0, 0.15),
+        inset -1px -1px 3px rgba(255, 255, 255, 0.05);
+      transform: translateY(1px);
+    }
+    
+    /* Light mode control strips */
+    body.light-mode .control-strip {
+      color: #4a7a4c;
+      box-shadow: 
+        2px 2px 3px rgba(0, 0, 0, 0.1),
+        -1px -1px 3px rgba(255, 255, 255, 0.5),
+        inset 0px 0px 0px rgba(0, 0, 0, 0);
+    }
+    
+    body.light-mode .control-strip:hover {
+      background-color: rgba(76, 175, 80, 0.1);
+      box-shadow: 
+        1px 1px 2px rgba(0, 0, 0, 0.1),
+        -1px -1px 2px rgba(255, 255, 255, 0.5),
+        inset 0px 0px 0px rgba(0, 0, 0, 0);
+    }
+    
+    body.light-mode .control-strip:active, body.light-mode .control-strip.active {
+      background-color: rgba(76, 175, 80, 0.15);
+      box-shadow: 
+        0px 0px 0px rgba(0, 0, 0, 0),
+        0px 0px 0px rgba(255, 255, 255, 0),
+        inset 2px 2px 3px rgba(0, 0, 0, 0.1),
+        inset -1px -1px 3px rgba(255, 255, 255, 0.3);
+    }
+    
+    /* New section for crypto controls */
+    .crypto-panel {
+      background-color: #1a1a1a;
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      height: 200px; /* New section height */
+    }
+    
+    .crypto-title {
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 14px;
+      color: var(--accent);
+      margin-bottom: 5px;
+    }
+    
+    .crypto-stats {
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .crypto-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    .crypto-chart {
+      flex: 1;
+      background-color: #222;
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .chart-line {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      background: linear-gradient(transparent, rgba(76, 175, 80, 0.2));
+      clip-path: polygon(0 100%, 5% 80%, 10% 85%, 15% 60%, 20% 70%, 25% 55%, 30% 60%, 35% 45%, 40% 50%, 45% 40%, 50% 35%, 55% 45%, 60% 30%, 65% 40%, 70% 20%, 75% 30%, 80% 25%, 85% 40%, 90% 35%, 95% 45%, 100% 30%, 100% 100%);
+    }
+    
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding-left: 30px;
+      padding-right: 20px;
+      justify-content: space-between;
+    }
+    
+    
+    .mini-screen {
+      background-color: var(--theme-screen-bg);
+      border-radius: 16px;
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 5px;
+      box-shadow: var(--screen-glow);
+      transition: background-color 0.5s ease, box-shadow 0.5s ease;
+      animation: crtFlicker 15s infinite;
+    }
+    
+    
+    /* Mesh pattern for mini screens */
+    .mini-screen::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        linear-gradient(rgba(76, 175, 80, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(76, 175, 80, 0.04) 1px, transparent 1px);
+      background-size: 15px 15px;
+      opacity: 0.4;
+      z-index: 1;
+      pointer-events: none;
+    }
+    
+    /* Screen glow effect */
+    .mini-screen::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at center, rgba(76, 175, 80, 0.06) 0%, rgba(0, 0, 0, 0) 70%); /* Reduced by 25% from 0.08 */
+      z-index: 1;
+      pointer-events: none;
+      box-shadow: inset 0 0 2px rgba(76, 175, 80, 0.4);
+      border-radius: inherit;
+    }
+    
+    /* Top mini screen specific height */
+    .mini-screen:first-child {
+      height: 180px;
+      animation: pulseGlow 4s infinite;
+    }
+    
+    /* Bottom mini screen specific height */
+    .mini-screen:last-child {
+      height: 460px;
+      margin-bottom: 0;
+      animation: pulseGlow 5s infinite;
+    }
+    
+    .mini-screen:first-child .mini-logo-text {
+      padding-right: 5px; /* Add small padding only for the first mini-screen */
+    }
+    
+    .mini-logo-text {
+      font-size: 2rem;
+      font-weight: 300;
+      font-family: 'Times New Roman', serif;
+      font-style: italic;
+      margin: 0;
+      line-height: 1.2;
+      color: var(--accent);
+      margin-top: 10px;
+      text-align: center; /* Added center alignment */
+      text-shadow: 0 0 8px rgba(76, 175, 80, 0.3); /* Reduced by 25% from 0.4 */
+      z-index: 2;
+      position: relative;
+    }
+    
+    .mini-logo-text sup.prefix {
+      font-size: 0.6rem;
+      vertical-align: super;
+      position: relative;
+      top: -10px;
+      left: 5px;
+      font-style: normal;
+      font-weight: normal;
+    }
+    
+    .mini-tagline {
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 12px;
+      color: var(--theme-text-primary);
+      margin-top: 15px;
+      margin-bottom: 25px;
+      font-weight: 400;
+      line-height: 1.5;
+      transition: color 0.5s ease;
+    }
+    
+    /* Smaller tagline style for sub-sections */
+    .mini-section .mini-tagline {
+      font-size: 10px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+      letter-spacing: 1.5px;
+      line-height: 1.4;
+    }
+    
+    .mini-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 30px;
+      z-index: 2;
+      position: relative;
+    }
+    
+    @keyframes mini-button-glow {
+      0% { box-shadow: 0 0 2px rgba(76, 175, 80, 0.2); }
+      50% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.4); }
+      100% { box-shadow: 0 0 2px rgba(76, 175, 80, 0.2); }
+    }
+    
+    .mini-button {
+      background-color: #c0d8c0;
+      color: #444444;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-weight: bold;
+      font-style: italic;
+      font-family: Garamond, serif;
+      position: relative;
+      border: none;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    
+    .mini-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 1px solid transparent;
+      border-image: linear-gradient(to bottom, rgba(255,255,255,0.3), rgba(0,0,0,0.1)) 1;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+    
+    .mini-button:hover {
+      background-color: #d5e8d5;
+      transform: translateY(-1px);
+      animation: mini-button-glow 2s infinite;
+    }
+    
+    .mini-button:active {
+      background-color: #b0c8b0;
+      transform: translateY(1px);
+      animation: none;
+    }
+    
+    .arrow {
+      position: relative;
+      transition: transform 0.3s;
+    }
+    
+    .mini-button:hover .arrow {
+      transform: translateX(3px);
+    }
+    
+    .auto-tools {
+      width: 100%;
+      padding: 5px 0;
+      text-align: center;
+    }
+    
+    .auto-tools-title {
+      display: none; /* Hide any auto-tools-title that might be added dynamically */
+    }
+    
+    .tool-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 5px 0;
+    }
+    
+    .tool-button {
+      background-color: var(--theme-bg-panel);
+      border-radius: 30px;
+      color: var(--theme-text-primary);
+      padding: 10px 15px;
+      cursor: pointer;
+      text-align: center;
+      user-select: none;
+      font-size: 14px;
+      transition: background-color 0.3s, color 0.3s, transform 0.2s, box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 5px var(--theme-shadow-color), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    }
+    
+    .icon-button {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border-radius: 50%;
+    }
+    
+    #low-energy { font-size: 14px; }
+    #med-energy { font-size: 14px; }
+    #high-energy { font-size: 14px; }
+    
+    #dark-theme, #light-theme {
+      font-size: 18px;
+    }
+    
+    .tool-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px var(--theme-shadow-color), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    }
+    
+    .tool-button.active {
+      background-color: var(--accent);
+      color: var(--theme-bg-dark);
+      box-shadow: 0 2px 4px rgba(76, 175, 80, 0.4), inset 0 1px 3px rgba(255, 255, 255, 0.3);
+      opacity: var(--theme-accent-opacity);
+    }
+    
+    .tool-button::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      transform: scale(0.5);
+    }
+    
+    .tool-button:hover::before {
+      opacity: 1;
+      transform: scale(1);
+    }
+    
+    /* Ripple effect for dial */
+    .ripple-effect {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 50%;
+      animation: dialRipple 1s ease-out;
+      pointer-events: none;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 1280px) {
+      .control-panel {
+        width: 95%;
+        height: auto;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        padding: 30px;
+        gap: 40px;
+      }
+      
+      .left-panel, .center-panel, .right-panel {
+        padding: 0;
+      }
+    }
+    
+    /* Leaf color variation for light/dark mode */
+    body.light-mode .falling-leaf {
+      filter: drop-shadow(0 0 3px rgba(76, 175, 80, 0.5)) brightness(0.9);
+    }
+    
+    /* Adjust button colors for light mode */
+    body.light-mode .tool-button:not(.active) {
+      background-color: #bbb6a6;
+    }
+    
+    body.light-mode .nav-button {
+      background-color: #bbb6a6;
+    }
+    
+    body.light-mode .control-strip {
+      background-color: #bbb6a6;
+      color: #333;
+    }
+    
+    /* Adjust screen inner shadow for light mode */
+    body.light-mode .main-display,
+    body.light-mode .mini-screen,
+    body.light-mode .video-container {
+      box-shadow: 0 0 15px rgba(76, 175, 80, 0.15), inset 0 0 40px rgba(0, 100, 0, 0.05);
+      border: 1px solid rgba(76, 175, 80, 0.2);
+    }
+    
+    body.light-mode .main-display::after,
+    body.light-mode .mini-screen::after,
+    body.light-mode .video-container::after {
+      box-shadow: inset 0 0 2px rgba(76, 175, 80, 0.3);
+    }
+    
+    /* Game Boy style screen styling for light mode */
+    body.light-mode .inner-glow {
+      opacity: 0.5;
+    }
+    
+    body.light-mode .scan-lines {
+      opacity: 0.15;
+    }
+    
+    /* Speaker style adjustments for light mode */
+    body.light-mode .speaker {
+      background-color: #b8b4a4;
+    }
+    
+    body.light-mode .speaker-dot {
+      background-color: #aaa;
+    }
+    
+    body.light-mode .speaker-dot.active {
+      background-color: rgba(76, 175, 80, 0.5);
+    }
+    
+    /* Main dial adjustments for light mode */
+    body.light-mode .main-dial {
+      background: radial-gradient(circle at 40% 40%, #c8c4b4, #aaa698);
+    }
+    
+    body.light-mode .main-dial::after {
+      filter: brightness(0.9);
+    }
+    
+    .brushed-button-group {
+      display: flex;
+      width: 90%;
+      height: 24px;
+      margin: 0 auto;
+      overflow: hidden;
+      border-radius: 3px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .brushed-button {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      cursor: pointer;
+      background: linear-gradient(to bottom, #5d5d5d 0%, #4a4a4a 50%, #3c3c3c 51%, #444444 100%);
+      border-right: 1px solid #2a2a2a;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      transition: all 0.2s ease;
+      overflow: hidden;
+    }
+    
+    .brushed-button:last-child {
+      border-right: none;
+    }
+    
+    /* Brushed metal effect */
+    .brushed-button::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.05),
+        rgba(255, 255, 255, 0.05) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+    }
+    
+    .brushed-button:hover {
+      background: linear-gradient(to bottom, #6e6e6e 0%, #5a5a5a 50%, #4c4c4c 51%, #545454 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    
+    .brushed-button.active {
+      background: linear-gradient(to bottom, #4caf50 0%, #429846 50%, #378f3b 51%, #3c9c41 100%);
+      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Light mode variants */
+    body.light-mode .brushed-button {
+      background: linear-gradient(to bottom, #c8c4b4 0%, #bab6a6 50%, #aaa698 51%, #bfbaa8 100%);
+      border-right: 1px solid #999;
+    }
+    
+    body.light-mode .brushed-button:hover {
+      background: linear-gradient(to bottom, #d2cebe 0%, #c4c0b0 50%, #b4b0a0 51%, #cac6b6 100%);
+    }
+    
+    body.light-mode .brushed-button.active {
+      background: linear-gradient(to bottom, #4caf50 0%, #45a549 50%, #3d9a41 51%, #429e47 100%);
+    }
+    
+    /* Indicator dots for energy level */
+    #low-energy::before {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    #med-energy::before {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 4px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 2px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    #high-energy::before {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 4px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 2px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    /* Theme icons */
+    #dark-theme::before {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background-color: transparent;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-sizing: border-box;
+    }
+    
+    #light-theme::before {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .wave-visualization {
+      width: 100%;
+      height: 30px;
+      position: relative;
+      margin: 0;
+      overflow: hidden;
+    }
+    
+    .wave-line {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(to right, 
+        transparent 0%, #ff3333 5%, transparent 10%,
+        transparent 10%, #ff3333 15%, transparent 20%,
+        transparent 25%, #ff3333 30%, transparent 35%,
+        transparent 38%, #ff3333 45%, transparent 50%,
+        transparent 55%, #ff3333 60%, transparent 65%,
+        transparent 68%, #ff3333 75%, transparent 80%,
+        transparent 85%, #ff3333 90%, transparent 95%
+      );
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath d='M0,80 C100,20 200,100 300,60 C400,20 500,80 600,40 C700,0 800,60 900,20 C1000,60 1100,0 1200,40 L1200,120 L0,120 Z' fill='%23000'/%3E%3C/svg%3E");
+      mask-size: 100% 100%;
+      animation: wave-animation 5s linear infinite alternate;
+    }
+    
+    @keyframes wave-animation {
+      0% {
+        mask-position: 0% 0%;
+      }
+      100% {
+        mask-position: 100% 0%;
+      }
+    }
+    
+    body.light-mode .wave-line {
+      background: linear-gradient(to right, 
+        transparent 0%, #cc0000 5%, transparent 10%,
+        transparent 10%, #cc0000 15%, transparent 20%,
+        transparent 25%, #cc0000 30%, transparent 35%,
+        transparent 38%, #cc0000 45%, transparent 50%,
+        transparent 55%, #cc0000 60%, transparent 65%,
+        transparent 68%, #cc0000 75%, transparent 80%,
+        transparent 85%, #cc0000 90%, transparent 95%
+      );
+    }
+    
+    body.light-mode .logo-text .byline {
+      color: #444444;
+      font-weight: bold;
+      font-style: italic;
+    }
+    
+    body.light-mode .mini-secondary-button {
+      background-color: #c0d8c0;
+      color: #444444;
+      font-family: Garamond, Georgia, serif;
+    }
+    
+    body.light-mode .mini-button span {
+      font-family: Garamond, Georgia, serif;
+      font-weight: bold;
+      font-style: italic;
+    }
+    
+    /* Adding glow to video container */
+    .video-container::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      box-shadow: inset 0 0 2px rgba(76, 175, 80, 0.4);
+      border-radius: inherit;
+      z-index: 3;
+    }
+    
+    /* Mini section styling for additional info blocks */
+    .mini-section {
+      margin-top: 15px;
+      padding-top: 12px;
+      padding-bottom: 8px;
+      border-top: 1px solid rgba(76, 175, 80, 0.2);
+      position: relative;
+      z-index: 2;
+      background: linear-gradient(to bottom, 
+                  rgba(76, 175, 80, 0.05), 
+                  transparent 80%);
+      border-radius: 6px;
+    }
+    
+    /* Smaller tagline style for sub-sections */
+    .mini-section .mini-tagline {
+      font-size: 9px;
+      margin-top: 5px;
+      margin-bottom: 8px;
+      letter-spacing: 1.5px;
+      line-height: 1.3;
+    }
+    
+    .mini-section::before {
+      content: '';
+      position: absolute;
+      top: 1px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      opacity: 0.7;
+    }
+    
+    /* Light mode adjustments for mini-sections */
+    body.light-mode .mini-section {
+      background: linear-gradient(to bottom, 
+                  rgba(76, 175, 80, 0.08), 
+                  transparent 80%);
+    }
+    
+    body.light-mode .mini-section::before {
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    }
+    
+    /* Sub logo styling for smaller sections */
+    .mini-logo-text.sub-logo {
+      font-size: 1.3rem;
+      margin-top: 4px;
+      margin-bottom: 3px;
+    }
+    
+    .mini-logo-text.sub-logo .prefix {
+      font-size: 0.45rem;
+      top: -6px;
+    }
+    
+    /* Token symbol styling */
+    .token-symbol {
+      color: var(--accent);
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-shadow: 0 0 5px rgba(76, 175, 80, 0.4);
+      padding: 2px 4px;
+      border-radius: 3px;
+      background-color: rgba(76, 175, 80, 0.1);
+      font-size: 11px;
+    }
+    
+    body.light-mode .token-symbol {
+      background-color: rgba(76, 175, 80, 0.15);
+      text-shadow: 0 0 3px rgba(76, 175, 80, 0.3);
+    }
+    
+    /* Mini action buttons styles */
+    .mini-action-buttons {
+      display: flex;
+      justify-content: center;
+      margin-top: 5px;
+    }
+    
+    .mini-action-btn {
+      background-color: rgba(76, 175, 80, 0.2);
+      color: var(--theme-text-primary);
+      border: none;
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 10px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      font-weight: bold;
+    }
+    
+    .mini-action-btn strong {
+      font-weight: 900;
+      letter-spacing: 0.7px;
+    }
+    
+    .mini-action-btn:hover {
+      background-color: rgba(76, 175, 80, 0.3);
+      transform: translateY(-1px);
+    }
+    
+    .mini-action-btn:active {
+      background-color: rgba(76, 175, 80, 0.4);
+      transform: translateY(1px);
+      box-shadow: 0 0 1px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Light mode button styles */
+    body.light-mode .mini-action-btn {
+      background-color: rgba(76, 175, 80, 0.25);
+      color: #444444;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    
+    body.light-mode .mini-action-btn:hover {
+      background-color: rgba(76, 175, 80, 0.35);
+    }
+    
+    body.light-mode .mini-action-btn:active {
+      background-color: rgba(76, 175, 80, 0.45);
+    }
+    
+    /* CRT flicker animation */
+    @keyframes crtFlicker {
+      0% { opacity: 1; }
+      3% { opacity: 0.95; }
+      6% { opacity: 1; }
+      7% { opacity: 0.97; }
+      9% { opacity: 1; }
+      11% { opacity: 0.97; }
+      23% { opacity: 1; }
+      48% { opacity: 1; }
+      49% { opacity: 0.94; }
+      50% { opacity: 1; }
+      55% { opacity: 1; }
+      57% { opacity: 0.96; }
+      60% { opacity: 1; }
+      98% { opacity: 1; }
+      100% { opacity: 0.98; }
+    }
+    
+    /* Add CRT flicker to main display */
+    .main-display, .mini-screen {
+      animation: crtFlicker 15s infinite;
+    }
+    
+    /* Add new CSS for chart visualization */
+    .chart-container {
+      width: 80%;
+      height: 200px;
+      margin: 20px auto;
+      position: relative;
+      border: 1px solid rgba(76, 175, 80, 0.2);
+      border-radius: 8px;
+      padding: 20px 40px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: visible;
+      display: none; /* Hide by default */
+    }
+    
+    /* Only show chart when specific modes are active */
+    .mode-aum .chart-container,
+    .mode-fwap .chart-container,
+    .mode-yield .chart-container {
+      display: block !important;
+    }
+    
+    .line-chart {
+      position: absolute;
+      top: 20px;
+      left: 40px;
+      right: 40px;
+      bottom: 20px;
+      width: calc(100% - 80px);
+      height: calc(100% - 40px);
+    }
+    
+    .line {
+      stroke: rgb(76, 175, 80);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+      animation: drawLine 2s ease forwards;
+      filter: drop-shadow(0 0 2px rgba(76, 175, 80, 0.3));
+    }
+    
+    .area {
+      fill: url(#lineGradient);
+      opacity: 0;
+      animation: fadeIn 1.5s ease forwards 0.5s;
+    }
+    
+    .data-point {
+      fill: rgb(76, 175, 80);
+      stroke: #fff;
+      stroke-width: 2;
+      r: 4;
+      opacity: 0;
+      animation: fadeInPoint 0.5s ease forwards;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .data-point:hover {
+      r: 5;
+      fill: #fff;
+      stroke: rgb(76, 175, 80);
+      filter: drop-shadow(0 0 4px rgba(76, 175, 80, 0.5));
+    }
+    
+    /* Grid styles */
+    .chart-grid {
+      position: absolute;
+      top: 20px;
+      left: 40px;
+      right: 40px;
+      bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    
+    .grid-line {
+      width: 100%;
+      height: 1px;
+      background: rgba(76, 175, 80, 0.15);
+      position: relative;
+    }
+    
+    .grid-label {
+      position: absolute;
+      left: -45px;
+      top: -10px;
+      color: rgba(76, 175, 80, 0.7);
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+    }
+    
+    .chart-value {
+      position: absolute;
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgb(76, 175, 80);
+      font-size: 1.2em;
+      font-weight: bold;
+      text-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+    }
+    
+    /* Update the gradient for the area fill */
+    #lineGradient stop:first-child {
+      stop-color: rgba(76, 175, 80, 0.2);
+    }
+    
+    #lineGradient stop:last-child {
+      stop-color: rgba(76, 175, 80, 0);
+    }
+    
+    /* Animations */
+    @keyframes drawLine {
+      0% {
+        stroke-dashoffset: 1000;
+        opacity: 0;
+      }
+      100% {
+        stroke-dashoffset: 0;
+        opacity: 1;
+      }
+    }
+    
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 0.15;
+      }
+    }
+    
+    @keyframes fadeInPoint {
+      0% {
+        opacity: 0;
+        transform: scale(0);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    /* Light mode adjustments */
+    body.light-mode .chart-container {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    body.light-mode .grid-line {
+      background: rgba(76, 175, 80, 0.15);
+    }
+    
+    body.light-mode .grid-label {
+      color: rgba(76, 175, 80, 0.8);
+    }
+    
+    body.light-mode .chart-value {
+      color: rgb(76, 175, 80);
+    }
+    
+    @keyframes glowPulse {
+      0% { filter: drop-shadow(0 0 2px rgba(76, 175, 80, 0.5)); }
+      50% { filter: drop-shadow(0 0 8px rgba(76, 175, 80, 0.8)); }
+      100% { filter: drop-shadow(0 0 2px rgba(76, 175, 80, 0.5)); }
+    }
+    
+    /* Add new styles in the <style> section */
+    .fund-stats {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      margin: 30px 0;
+      gap: 40px;
+    }
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+    }
+    
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+    }
+    
+    .main-action-button {
+      margin-top: 30px;
+    }
+    
+    .action-btn {
+      background-color: var(--accent);
+      color: #111;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 1.1rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3), 
+                  inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    }
+    
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 
+                  inset 0 1px 1px rgba(255, 255, 255, 0.3),
+                  0 0 15px rgba(76, 175, 80, 0.5);
+    }
+    
+    .action-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3),
+                  inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    }
+    
+    .action-btn .arrow {
+      transition: transform 0.3s ease;
+    }
+    
+    .action-btn:hover .arrow {
+      transform: translateX(5px);
+    }
+
+    /* Add to the style section */
+    .screen-content {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      transition: opacity 0.3s ease;
+      padding-top: 40px; /* Reduced top padding to move content up */
+    }
+
+    .logo-text {
+      font-size: 3.5rem; /* Adjusted size */
+      font-weight: 300;
+      font-family: 'Times New Roman', serif;
+      font-style: italic;
+      margin: 0 0 5px 0; /* Reduced bottom margin */
+      line-height: 1;
+      color: var(--accent);
+      position: relative;
+      z-index: 2;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3), 0 0 10px rgba(76, 175, 80, 0.375);
+    }
+
+    .byline {
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 30px; /* Decreased from 35px to 30px */
+      padding-top: 10px;
+      display: block;
+      opacity: 0.9;
+      position: relative;
+      top: 8px; /* Slightly reduced from 10px */
+      color: #e0e0e0;
+      text-shadow: 0 0 2px rgba(224, 224, 224, 0.3);
+    }
+
+    .tagline {
+      font-size: 1.2rem;
+      margin: 35px 0 30px 0; /* Adjusted from 40px */
+      color: var(--text-light);
+      letter-spacing: 1px;
+    }
+
+    .fund-stats {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      max-width: 800px;
+      margin: 20px 0; /* Reduced margin */
+      gap: 40px;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-value {
+      font-size: 2.5rem; /* Increased size */
+      font-weight: bold;
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* Adjust main display padding */
+    .main-display {
+      padding: 30px; /* Reduced padding */
+    }
+
+    /* Update screen effects positioning */
+    .screen-effects {
+      z-index: 1;
+    }
+
+    .screen-content.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Add new styles for the Manage Funds button */
+    .mini-button {
+      background-color: var(--accent);
+      color: #111;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3), 
+                  inset 0 1px 1px rgba(255, 255, 255, 0.3);
+      width: 100%;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    .mini-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 
+                  inset 0 1px 1px rgba(255, 255, 255, 0.3),
+                  0 0 15px rgba(76, 175, 80, 0.5);
+    }
+
+    .mini-button:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3),
+                  inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    }
+
+    .mini-button .arrow {
+      transition: transform 0.3s ease;
+    }
+
+    .mini-button:hover .arrow {
+      transform: translateX(5px);
+    }
+
+    .logo-text sup {
+      font-size: 1rem;
+      vertical-align: super;
+      position: relative;
+      top: -5px; /* Move up */
+      right: -3px; /* Move right */
+      margin-left: 2px; /* Add some space from the text */
+    }
+
+    /* Update stat value styling to match sub-logos */
+    .stat-value {
+      font-size: 2.5rem;
+      font-family: 'Times New Roman', serif;
+      font-style: italic;
+      font-weight: 300;
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+
+    /* Ensure consistent styling across all mode screens */
+    .aum-screen .stat-value,
+    .fwap-screen .stat-value,
+    .yield-screen .stat-value,
+    .mine-screen .stat-value,
+    .farm-screen .stat-value,
+    .trade-screen .stat-value,
+    .greenfund-screen .stat-value {
+      font-family: 'Times New Roman', serif;
+      font-style: italic;
+      font-weight: 300;
+    }
+
+    /* Keep stat labels distinct */
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-family: inherit; /* Keep original font for labels */
+      font-style: normal;
+      font-weight: normal;
+    }
+
+    /* Ensure proper vertical alignment */
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      text-align: center;
+    }
+
+    /* Add monospace font style for specific taglines */
+    .aum-screen .tagline,
+    .fwap-screen .tagline,
+    .yield-screen .tagline,
+    .mine-screen .tagline,
+    .farm-screen .tagline,
+    .trade-screen .tagline {
+      font-family: 'Courier New', monospace;
+      color: #e0e0e0;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      opacity: 0.9;
+      text-shadow: 0 0 2px rgba(224, 224, 224, 0.3);
+    }
+
+    /* Light theme adjustment */
+    body.light-mode .aum-screen .tagline,
+    body.light-mode .fwap-screen .tagline,
+    body.light-mode .yield-screen .tagline,
+    body.light-mode .mine-screen .tagline,
+    body.light-mode .farm-screen .tagline,
+    body.light-mode .trade-screen .tagline {
+      color: #707070;
+      text-shadow: 0 0 2px rgba(112, 112, 112, 0.3);
+    }
+
+    /* Add smaller font size for INSTANT text */
+    .trade-screen .stat-value.instant {
+      font-size: 2rem; /* Slightly smaller than the default 2.5rem */
+    }
+
+    /* Add smaller font size for Quarterly text */
+    .greenfund-screen .stat-value.quarterly {
+      font-size: 2rem; /* Slightly smaller than the default 2.5rem */
+    }
+
+    /* Add specific styling for GreenFund byline */
+    .greenfund-screen .byline {
+      margin-top: 6rem;  /* Dramatically increased from 3rem to create much more space */
+      display: block;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      opacity: 0.8;
+      position: relative;  /* Add positioning to ensure proper spacing */
+    }
+
+    /* Ensure monospace font and color for GreenFund tagline */
+    .greenfund-screen .tagline {
+      font-family: 'Courier New', monospace;
+      color: #e0e0e0;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      opacity: 0.9;
+      text-shadow: 0 0 2px rgba(224, 224, 224, 0.3);
+      margin-top: 1rem;
+    }
+
+    /* Light theme adjustment for GreenFund tagline */
+    body.light-mode .greenfund-screen .tagline {
+      color: #707070;
+      text-shadow: 0 0 2px rgba(112, 112, 112, 0.3);
+    }
+
+    /* Style for home screen tagline */
+    .home-screen .tagline {
+      font-family: 'Courier New', monospace;
+      color: #e0e0e0;
+      text-shadow: 0 0 2px rgba(224, 224, 224, 0.3);
+    }
+
+    body.light-mode .home-screen .tagline {
+      color: #707070;
+      text-shadow: 0 0 2px rgba(112, 112, 112, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <!-- Falling leaves container -->
+  <div id="leaves-container"></div>
+  
+  <div class="control-panel">
+    <div class="left-panel">
+      <div class="video-container">
+        <video class="video-player" autoplay loop muted>
+          <source src="server-wall - Copy.webm" type="video/webm">
+        </video>
+        <!-- Screen effects -->
+        <div class="screen-effects scan-lines"></div>
+        <div class="screen-effects inner-glow"></div>
+        <div class="screen-effects noise-texture"></div>
+      </div>
+      
+      <div class="nav-buttons">
+        <div class="nav-button" id="zoom-btn">🔍</div>
+        <div class="nav-button" id="switch-btn">⟳</div>
+        <div class="nav-button" id="tilt-up">⇧</div>
+        <div class="nav-button" id="tilt-down">⇩</div>
+        <div class="nav-button" id="pan-left">◀</div>
+        <div class="nav-button" id="pan-right">▶</div>
+      </div>
+      
+      <div class="speaker" id="speaker">
+        <!-- Speaker dots will be generated by JavaScript -->
+      </div>
+      
+      <div class="main-dial"></div>
+      
+      <div class="version-selector">
+        <div class="version active">
+          <span>ECO</span>
+          <div class="indicator"></div>
+        </div>
+        <div class="version">
+          <span>PRO</span>
+          <div class="indicator"></div>
+        </div>
+        <div class="version">
+          <span>MAX</span>
+          <div class="indicator"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="center-panel">
+      <div class="main-display">
+        <!-- Home screen -->
+        <div class="screen-content home-screen">
+          <h1 class="logo-text">
+            <span style="color: var(--accent-light)">Print</span>Green<sup>™</sup>
+            <span class="byline">BY BARRON</span>
+          </h1>
+          <p class="tagline">SUSTAINABLY SOURCED FREERANGE COMPUTE POWERING ORGANIC HALAL CRYPTO TRADING</p>
+          
+          <!-- Screen effects -->
+          <div class="screen-effects scan-lines"></div>
+          <div class="screen-effects inner-glow"></div>
+          <div class="screen-effects noise-texture"></div>
+          <div class="screen-effects mesh-pattern"></div>
+        </div>
+
+        <!-- GreenFund screen -->
+        <div class="screen-content greenfund-screen" style="display: none;">
+          <h1 class="logo-text">
+            <span style="color: var(--accent-light)">Print</span>Green<sup>™</sup><br>
+            GreenFund<br>
+            <span class="byline">INVESTMENT FUND</span>
+          </h1>
+          <p class="tagline">Sustainably Powered Digital Investment Fund</p>
+          <div class="fund-stats">
+            <div class="stat-item">
+              <span class="stat-value">$72K</span>
+              <span class="stat-label">AUM</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">18.2%</span>
+              <span class="stat-label">ROI</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value quarterly">Quarterly</span>
+              <span class="stat-label">RETURNS</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- AUM screen -->
+        <div class="screen-content aum-screen" style="display: none;">
+          <h1 class="logo-text">
+            <span style="color: var(--accent-light)">Print</span>Green<sup>™</sup>
+            <span class="byline">ASSET MANAGEMENT</span>
+          </h1>
+          <p class="tagline">ASSETS UNDER MANAGEMENT</p>
+          <div class="fund-stats">
+            <div class="stat-item">
+              <span class="stat-value">$580K</span>
+              <span class="stat-label">AUM</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">18.2%</span>
+              <span class="stat-label">APY</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">24H</span>
+              <span class="stat-label">SETTLEMENT</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- FWAP screen -->
+        <div class="screen-content fwap-screen" style="display: none;">
+          <h1 class="logo-text">
+            <span style="color: var(--accent-light)">FWAP</span>
+            <span class="byline">FUNDING WEIGHTED ASSET PROTOCOL</span>
+          </h1>
+          <p class="tagline">High Frequency Wave Imbalance Algo Pulse</p>
+          <div class="fund-stats">
+            <div class="stat-item">
+              <span class="stat-value">$23,000</span>
+              <span class="stat-label">ACTIVE TRADE</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">±0.02</span>
+              <span class="stat-label">24H VARIANCE</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">1.8</span>
+              <span class="stat-label">EXPECTED VALUE</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- YIELD screen -->
+        <div class="screen-content yield-screen" style="display: none;">
+          <h1 class="logo-text">
+            <span style="color: var(--accent-light)">YIELD</span>
+            <span class="byline">ANNUALIZED RATE</span>
+          </h1>
+          <p class="tagline">NATIVE YIELD POWERED BY $GBACKS DISTRIBUTED EVERY 30 DAYS HELD</p>
+          <div class="fund-stats">
+            <div class="stat-item">
+              <span class="stat-value">15.8%</span>
+              <span class="stat-label">CURRENT YIELD</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">+0.3%</span>
+              <span class="stat-label">30D CHANGE</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">$315K</span>
+              <span class="stat-label">TVL</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Mine screen -->
+        <div class="screen-content mine-screen" style="display: none;">
+          <h1 class="logo-text">
+            <span style="color: var(--accent-light)">Green</span>Mine<sup>™</sup>
+            <span class="byline">MINING OPERATIONS</span>
+          </h1>
+          <p class="tagline">GREEN COMPUTE TOKEN VALIDATOR NODES POW MINING AND COMPUTE CLUSTER RENTALS BY POWERED BY $GCT</p>
+          <div class="fund-stats">
+            <div class="stat-item">
+              <span class="stat-value">1.1 EH/s</span>
+              <span class="stat-label">HASH RATE</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">$1.72</span>
+              <span class="stat-label">REWARD</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">18.25%</span>
+              <span class="stat-label">VARIABLE APR</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Farm screen -->
+        <div class="screen-content farm-screen" style="display: none;">
+          <h1 class="logo-text">
+            <span style="color: var(--accent-light)">Print</span>Farms<sup>™</sup>
+            <span class="byline">YIELD FARMING</span>
+          </h1>
+          <p class="tagline">BOOSTED AUTO COMPOUNDING YIELD FARMS</p>
+          <div class="fund-stats">
+            <div class="stat-item">
+              <span class="stat-value">$46,000</span>
+              <span class="stat-label">TVL</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">18%</span>
+              <span class="stat-label">APY(10% BOOST)</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">24H</span>
+              <span class="stat-label">HARVEST</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Trade screen -->
+        <div class="screen-content trade-screen" style="display: none;">
+          <h1 class="logo-text">
+            <span style="color: var(--accent-light)">Print</span>Trade<sup>™</sup>
+            <span class="byline">TRADING SUITE</span>
+          </h1>
+          <p class="tagline">HALAL TRADING SUITE</p>
+          <div class="fund-stats">
+            <div class="stat-item">
+              <span class="stat-value">$300K</span>
+              <span class="stat-label">24H VOLUME</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">0.1%</span>
+              <span class="stat-label">FEE</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value instant">INSTANT</span>
+              <span class="stat-label">SETTLEMENT</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Screen effects -->
+        <div class="screen-effects scan-lines"></div>
+        <div class="screen-effects inner-glow"></div>
+        <div class="screen-effects noise-texture"></div>
+        <div class="screen-effects mesh-pattern"></div>
+      </div>
+      
+      <div class="control-strips-container">
+        <!-- New upper control strips -->
+        <div class="control-strips upper-strips">
+          <div class="control-strip">AUM</div>
+          <div class="control-strip">FWAP</div>
+          <div class="control-strip">YIELD</div>
+        </div>
+        
+        <!-- Original control strips -->
+        <div class="control-strips">
+          <div class="control-strip">Mine</div>
+          <div class="control-strip">Farm</div>
+          <div class="control-strip">Trade</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="right-panel">
+      <div class="mini-screen">
+        <h2 class="mini-logo-text"><sup class="prefix">THE</sup>Green<span style="color: var(--accent-light)">Room</span></h2>
+        <p class="mini-tagline">MASTER TRADERS<br>EXECUTIVE SUITE</p>
+        <div class="mini-buttons">
+          <div class="mini-button mini-secondary-button">
+            <span>Connect</span>
+          </div>
+        </div>
+        
+        <!-- Screen effects -->
+        <div class="screen-effects scan-lines"></div>
+        <div class="screen-effects inner-glow"></div>
+        <div class="screen-effects noise-texture"></div>
+        <div class="screen-effects rgb-shift"></div>
+      </div>
+      
+      <div class="auto-tools">
+        <div class="brushed-button-group">
+          <div class="brushed-button" id="low-energy" title="Low Energy"></div>
+          <div class="brushed-button" id="med-energy" title="Medium Energy"></div>
+          <div class="brushed-button" id="high-energy" title="High Energy"></div>
+          <div class="brushed-button" id="dark-theme" title="Dark Theme"></div>
+          <div class="brushed-button" id="light-theme" title="Light Theme"></div>
+        </div>
+      </div>
+      
+      <div class="mini-screen">
+        <h2 class="mini-logo-text"><sup class="prefix">THE</sup>Green<span style="color: var(--accent-light)">Fund</span></h2>
+        <p class="mini-tagline">FWAP and AUM</p>
+        <div class="mini-buttons">
+          <button class="mini-button mini-secondary-button" id="manage-funds-btn">
+            <span>Manage Funds</span>
+            <span class="arrow">→</span>
+          </button>
+        </div>
+        
+        <!-- New GreenBacks section -->
+        <div class="mini-section">
+          <h2 class="mini-logo-text sub-logo"><sup class="prefix">THE</sup>Green<span style="color: var(--accent-light)">Backs</span></h2>
+          <p class="mini-tagline"><span class="token-symbol">$GBACKS</span> RWA<br>1:1 BACKED US DOLLARS<br>NATIVE YIELD STABLE COIN</p>
+          <div class="mini-action-buttons">
+            <button class="mini-action-btn"><strong>View Details</strong></button>
+          </div>
+        </div>
+        
+        <!-- New GreenCompute section -->
+        <div class="mini-section">
+          <h2 class="mini-logo-text sub-logo"><sup class="prefix">THE</sup>Green<span style="color: var(--accent-light)">Compute</span></h2>
+          <p class="mini-tagline"><span class="token-symbol">$GCT</span> GREEN COMPUTE TOKEN<br>AI AGENT INFRA GOVERNANCE<br>PLATFORM UTILITY TOKEN AUM</p>
+          <div class="mini-action-buttons">
+            <button class="mini-action-btn"><strong>View Details</strong></button>
+          </div>
+        </div>
+        
+        <!-- Screen effects -->
+        <div class="screen-effects scan-lines"></div>
+        <div class="screen-effects inner-glow"></div>
+        <div class="screen-effects noise-texture"></div>
+        <div class="screen-effects rgb-shift"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("PrintGreen enhanced UI is initializing...");
+      
+      // Add functionality for the fund detail buttons
+      const fundDetailButtons = document.querySelectorAll('.mini-action-btn');
+      fundDetailButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          
+          // Find which fund was clicked
+          const parentSection = this.closest('.mini-section');
+          const fundName = parentSection.querySelector('.mini-logo-text').textContent.trim();
+          const tokenSymbol = parentSection.querySelector('.token-symbol').textContent.trim();
+          
+          // Visual effect on button click
+          createLeaves(3);
+          pulseActiveSpeakerDots();
+          
+          // Log the action (would be replaced with actual modal/info display)
+          console.log(`Viewing details for ${fundName} (${tokenSymbol})`);
+          
+          // Flash the section to indicate activation
+          parentSection.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
+          setTimeout(() => {
+            parentSection.style.backgroundColor = '';
+          }, 300);
+          
+          // Future enhancement: show modal with more fund details
+          alert(`${fundName} Details\n\nToken: ${tokenSymbol}\n\nMore comprehensive information would be displayed here in a proper modal window with charts, statistics, and detailed descriptions.`);
+        });
+      });
+      
+      // Video player setup and controls
+      const videoPlayer = document.querySelector('.video-player');
+      const zoomBtn = document.getElementById('zoom-btn');
+      const switchBtn = document.getElementById('switch-btn');
+      const tiltUpBtn = document.getElementById('tilt-up');
+      const tiltDownBtn = document.getElementById('tilt-down');
+      const panLeftBtn = document.getElementById('pan-left');
+      const panRightBtn = document.getElementById('pan-right');
+      const controlPanel = document.querySelector('.control-panel');
+      const mainDisplay = document.querySelector('.main-display');
+      const miniScreens = document.querySelectorAll('.mini-screen');
+      const energyButtons = document.querySelectorAll('#low-energy, #med-energy, #high-energy');
+      const themeButtons = document.querySelectorAll('#dark-theme, #light-theme');
+      const leavesContainer = document.getElementById('leaves-container');
+      const controlStrips = document.querySelectorAll('.control-strip');
+      const miniButtons = document.querySelectorAll('.mini-button');
+      
+      // Button press intervals
+      let tiltUpInterval = null;
+      let tiltDownInterval = null;
+      let panLeftInterval = null;
+      let panRightInterval = null;
+      
+      // Zoom state
+      let isZoomedIn = false;
+      const ZOOM_MIN = 1.1;  // Initial zoom level
+      const ZOOM_MAX = 2.5;   // Maximum zoom level
+      
+      // Movement speed per interval
+      const MOVEMENT_SPEED = 3; // pixels per interval
+      
+      // Load videos
+      const videos = [
+        'server-wall - Copy.webm',
+        'rainbow-tunnel - Copy.webm',
+        'server-wide - Copy.webm'
+      ];
+      
+      // Preload videos to ensure they work
+      const videoPreloads = videos.map(src => {
+        const video = document.createElement('video');
+        video.src = src;
+        video.load();
+        return video;
+      });
+      
+      let currentVideoIndex = 0;
+      let currentScale = ZOOM_MIN; // Initial zoom level
+      let currentPanX = 0;
+      let currentTiltY = 0;
+      
+      // Calculate maximum pan/tilt based on scale
+      const getMaxPan = (scale) => {
+        const videoWidth = videoPlayer.offsetWidth;
+        const containerWidth = videoPlayer.parentElement.offsetWidth;
+        // Calculate how much the video extends beyond the container when scaled
+        const scaledOverflow = (videoWidth * scale - containerWidth) / (2 * scale);
+        return Math.max(scaledOverflow, 0);
+      };
+      
+      const getMaxTilt = (scale) => {
+        const videoHeight = videoPlayer.offsetHeight;
+        const containerHeight = videoPlayer.parentElement.offsetHeight;
+        // Calculate how much the video extends beyond the container when scaled
+        const scaledOverflow = (videoHeight * scale - containerHeight) / (2 * scale);
+        return Math.max(scaledOverflow, 0);
+      };
+      
+      // Update transform with boundary checks
+      const updateTransform = () => {
+        const maxPan = getMaxPan(currentScale);
+        const maxTilt = getMaxTilt(currentScale);
+        
+        // Clamp pan and tilt values within bounds
+        currentPanX = Math.max(Math.min(currentPanX, maxPan), -maxPan);
+        currentTiltY = Math.max(Math.min(currentTiltY, maxTilt), -maxTilt);
+        
+        videoPlayer.style.transform = `scale(${currentScale}) translate(${currentPanX}px, ${currentTiltY}px)`;
+      };
+      
+      // Clear all movement intervals
+      const clearAllMovementIntervals = () => {
+        clearInterval(tiltUpInterval);
+        clearInterval(tiltDownInterval);
+        clearInterval(panLeftInterval);
+        clearInterval(panRightInterval);
+        tiltUpInterval = null;
+        tiltDownInterval = null;
+        panLeftInterval = null;
+        panRightInterval = null;
+      };
+      
+      // Toggle zoom function - toggles between min and max zoom
+      const toggleZoom = () => {
+        isZoomedIn = !isZoomedIn;
+        currentScale = isZoomedIn ? ZOOM_MAX : ZOOM_MIN;
+        
+        // Adjust pan and tilt limits when zoom level changes
+        const maxPan = getMaxPan(currentScale);
+        const maxTilt = getMaxTilt(currentScale);
+        
+        // Clamp values within new bounds
+        currentPanX = Math.max(Math.min(currentPanX, maxPan), -maxPan);
+        currentTiltY = Math.max(Math.min(currentTiltY, maxTilt), -maxTilt);
+        
+        updateTransform();
+        
+        // Visual feedback
+        zoomBtn.style.transform = isZoomedIn ? 'scale(0.95)' : 'scale(1)';
+        createLeaves(isZoomedIn ? 5 : 2);
+      };
+      
+      // Reset position when switching videos
+      switchBtn.addEventListener('click', () => {
+        currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+        videoPlayer.src = videos[currentVideoIndex];
+        videoPlayer.load();
+        videoPlayer.play();
+        
+        // Reset position and scale
+        currentPanX = 0;
+        currentTiltY = 0;
+        currentScale = ZOOM_MIN;
+        isZoomedIn = false;
+        updateTransform();
+        
+        // Visual feedback
+        createLeaves(3);
+        zoomBtn.style.transform = 'scale(1)';
+        
+        // Add flash effect to the video container
+        const videoContainer = document.querySelector('.video-container');
+        videoContainer.style.boxShadow = '0 0 20px rgba(76, 175, 80, 0.7)';
+        setTimeout(() => {
+          videoContainer.style.boxShadow = 'var(--screen-glow)';
+        }, 300);
+      });
+      
+      // Zoom button now toggles between zoom states
+      zoomBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleZoom();
+      });
+      
+      // Ensure touchscreen support for zoom
+      zoomBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        toggleZoom();
+      });
+      
+      // Continuous tilt up while held
+      function startTiltUp() {
+        clearAllMovementIntervals();
+        
+        tiltUpInterval = setInterval(() => {
+          const maxTilt = getMaxTilt(currentScale);
+          const newTiltY = currentTiltY - MOVEMENT_SPEED;
+          if (newTiltY >= -maxTilt) {
+            currentTiltY = newTiltY;
+            updateTransform();
+            
+            // Occasional visual feedback
+            if (Math.random() > 0.9) {
+              pulseActiveSpeakerDots();
+            }
+          }
+        }, 30);
+      }
+      
+      // Continuous tilt down while held
+      function startTiltDown() {
+        clearAllMovementIntervals();
+        
+        tiltDownInterval = setInterval(() => {
+          const maxTilt = getMaxTilt(currentScale);
+          const newTiltY = currentTiltY + MOVEMENT_SPEED;
+          if (newTiltY <= maxTilt) {
+            currentTiltY = newTiltY;
+            updateTransform();
+            
+            // Occasional visual feedback
+            if (Math.random() > 0.9) {
+              pulseActiveSpeakerDots();
+            }
+          }
+        }, 30);
+      }
+      
+      // Continuous pan left while held
+      function startPanLeft() {
+        clearAllMovementIntervals();
+        
+        panLeftInterval = setInterval(() => {
+          const maxPan = getMaxPan(currentScale);
+          const newPanX = currentPanX + MOVEMENT_SPEED;
+          if (newPanX <= maxPan) {
+            currentPanX = newPanX;
+            updateTransform();
+            
+            // Occasional visual feedback
+            if (Math.random() > 0.9) {
+              pulseActiveSpeakerDots();
+            }
+          }
+        }, 30);
+      }
+      
+      // Continuous pan right while held
+      function startPanRight() {
+        clearAllMovementIntervals();
+        
+        panRightInterval = setInterval(() => {
+          const maxPan = getMaxPan(currentScale);
+          const newPanX = currentPanX - MOVEMENT_SPEED;
+          if (newPanX >= -maxPan) {
+            currentPanX = newPanX;
+            updateTransform();
+            
+            // Occasional visual feedback
+            if (Math.random() > 0.9) {
+              pulseActiveSpeakerDots();
+            }
+          }
+        }, 30);
+      }
+      
+      // Set up mousedown/touchstart events for directional buttons
+      tiltUpBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        tiltUpBtn.style.transform = 'scale(0.95)';
+        startTiltUp();
+      });
+      
+      tiltDownBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        tiltDownBtn.style.transform = 'scale(0.95)';
+        startTiltDown();
+      });
+      
+      panLeftBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        panLeftBtn.style.transform = 'scale(0.95)';
+        startPanLeft();
+      });
+      
+      panRightBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        panRightBtn.style.transform = 'scale(0.95)';
+        startPanRight();
+      });
+      
+      // Stop movement on mouseup/touchend
+      document.addEventListener('mouseup', () => {
+        clearAllMovementIntervals();
+        
+        // Reset button visual state
+        tiltUpBtn.style.transform = '';
+        tiltDownBtn.style.transform = '';
+        panLeftBtn.style.transform = '';
+        panRightBtn.style.transform = '';
+        
+        // Final visual feedback
+        if (Math.random() > 0.5) {
+          pulseActiveSpeakerDots();
+        }
+      });
+      
+      // Touch support for directional buttons
+      tiltUpBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        tiltUpBtn.style.transform = 'scale(0.95)';
+        startTiltUp();
+      });
+      
+      tiltDownBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        tiltDownBtn.style.transform = 'scale(0.95)';
+        startTiltDown();
+      });
+      
+      panLeftBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        panLeftBtn.style.transform = 'scale(0.95)';
+        startPanLeft();
+      });
+      
+      panRightBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        panRightBtn.style.transform = 'scale(0.95)';
+        startPanRight();
+      });
+      
+      document.addEventListener('touchend', () => {
+        clearAllMovementIntervals();
+        
+        // Reset button visual state
+        tiltUpBtn.style.transform = '';
+        tiltDownBtn.style.transform = '';
+        panLeftBtn.style.transform = '';
+        panRightBtn.style.transform = '';
+        
+        // Final visual feedback
+        if (Math.random() > 0.5) {
+          pulseActiveSpeakerDots();
+        }
+      });
+      
+      // Generate speaker dots with animation capability
+      const speaker = document.getElementById('speaker');
+      for (let i = 0; i < 100; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'speaker-dot';
+        speaker.appendChild(dot);
+      }
+      
+      // Function to animate speaker dots
+      function pulseActiveSpeakerDots() {
+        const speakerDots = document.querySelectorAll('.speaker-dot');
+        // Clear any active dots
+        speakerDots.forEach(dot => dot.classList.remove('active'));
+        
+        // Randomly activate some dots
+        for (let i = 0; i < 15; i++) {
+          const randomIndex = Math.floor(Math.random() * speakerDots.length);
+          speakerDots[randomIndex].classList.add('active');
+          
+          // Automatically remove the active class after a random delay
+          setTimeout(() => {
+            speakerDots[randomIndex].classList.remove('active');
+          }, 300 + Math.random() * 700);
+        }
+      }
+      
+      // Periodically pulse some dots for ambient effect
+      setInterval(() => {
+        if (Math.random() > 0.7) { // 30% chance to trigger
+          pulseActiveSpeakerDots();
+        }
+      }, 2000);
+      
+      // Make knob interactive with visual and rotation animation
+      const mainDial = document.querySelector('.main-dial');
+      let dialRotation = 210; // Initial rotation
+      let dialRotationSpeed = 0; // For continuous rotation
+      let dialRotationDirection = 1; // 1 for clockwise, -1 for counter-clockwise
+      let dialRotationInterval = null;
+      
+      // Improved dial rotation with more accurate transformation
+      function updateDialRotation(rotation) {
+        const afterEl = mainDial.querySelector('::after');
+        if (afterEl) {
+          afterEl.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+        } else {
+          // Apply rotation directly to the main-dial's after pseudo-element using CSS property
+          mainDial.style.setProperty('--dial-rotation', `${rotation}deg`);
+        }
+        
+        // Also manually create/update the afterElement style if needed
+        let styleEl = document.getElementById('dial-style');
+        if (!styleEl) {
+          styleEl = document.createElement('style');
+          styleEl.id = 'dial-style';
+          document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = `.main-dial::after { transform: translateX(-50%) rotate(${rotation}deg); }`;
+      }
+      
+      // Function to create ripple effect on dial
+      function createDialRipple() {
+        const ripple = document.createElement('div');
+        ripple.className = 'ripple-effect';
+        mainDial.appendChild(ripple);
+        
+        // Remove the ripple after animation completes
+        setTimeout(() => {
+          if (ripple && ripple.parentNode) {
+            ripple.parentNode.removeChild(ripple);
+          }
+        }, 1000);
+      }
+      
+      // Function to start continuous rotation
+      function startContinuousRotation() {
+        if (dialRotationInterval) {
+          clearInterval(dialRotationInterval);
+        }
+        
+        // Create initial ripple
+        createDialRipple();
+        
+        dialRotationInterval = setInterval(() => {
+          dialRotation = (dialRotation + (2 * dialRotationDirection)) % 360;
+          if (dialRotation < 0) dialRotation += 360;
+          
+          updateDialRotation(dialRotation);
+          
+          // Trigger visual effects occasionally during rotation
+          if (Math.random() > 0.8) {
+            pulseActiveSpeakerDots();
+          }
+          
+          if (Math.random() > 0.9) {
+            createLeaves(1);
+          }
+          
+          // Create occasional ripple during rotation
+          if (Math.random() > 0.95) {
+            createDialRipple();
+          }
+          
+          // Change the glow color of screens based on rotation position
+          const hue = (dialRotation / 360) * 120; // 0-120 range (green spectrum)
+          const screens = document.querySelectorAll('.main-display, .mini-screen');
+          screens.forEach(screen => {
+            screen.style.boxShadow = `0 0 15px hsla(${hue}, 80%, 40%, 0.3)`; // Reduced by 25% from 0.4
+            
+            // Add digital pulse effect to screens
+            const scanLines = screen.querySelector('.scan-lines');
+            if (scanLines) {
+              scanLines.style.animation = 'scanlines 8s linear infinite, digitalPulse 0.5s infinite';
+              scanLines.style.opacity = 0.3 + (Math.sin(dialRotation * Math.PI / 180) * 0.15); // Reduced by 25% from 0.2
+            }
+          });
+          
+          // Vary the intensity of glow based on rotation
+          const glowIntensity = 0.15 + (Math.sin(dialRotation * Math.PI / 180) + 1) * 0.15; // Reduced by 25% from 0.2
+          mainDial.style.boxShadow = `var(--knob-shadow), 0 0 ${glowIntensity * 20}px rgba(76, 175, 80, ${glowIntensity})`;
+          
+          // Slightly affect video playback speed based on dial position
+          const playbackRate = 0.8 + (dialRotation / 360) * 0.4; // Range from 0.8 to 1.2
+          videoPlayer.playbackRate = playbackRate;
+          
+          // Update speaker dots intensity based on dial position
+          const speakerDots = document.querySelectorAll('.speaker-dot.active');
+          speakerDots.forEach(dot => {
+            dot.style.backgroundColor = `rgba(76, 175, 80, ${0.3 + (Math.sin(dialRotation * Math.PI / 180) + 1) * 0.225})`; // Reduced by 25% from 0.4 and 0.3
+          });
+        }, 30); // Update about 33 times per second for smooth animation
+      }
+      
+      // Function to stop continuous rotation
+      function stopContinuousRotation() {
+        if (dialRotationInterval) {
+          clearInterval(dialRotationInterval);
+          dialRotationInterval = null;
+          
+          // Reset glows
+          const screens = document.querySelectorAll('.main-display, .mini-screen');
+          screens.forEach(screen => {
+            screen.style.boxShadow = '';
+            
+            // Reset scan lines animation
+            const scanLines = screen.querySelector('.scan-lines');
+            if (scanLines) {
+              scanLines.style.animation = 'scanlines 8s linear infinite';
+              scanLines.style.opacity = 0.3;
+            }
+          });
+          
+          // Reset video playback rate
+          videoPlayer.playbackRate = 1.0;
+          
+          mainDial.style.boxShadow = '';
+          
+          // Trigger final effect
+          createLeaves(5);
+          pulseActiveSpeakerDots();
+          createDialRipple();
+        }
+      }
+      
+      // Single click
+      mainDial.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Don't trigger on drag end
+        if (isDragging) return;
+        
+        // Toggle rotation direction
+        dialRotationDirection = -dialRotationDirection;
+        
+        // For a single click, just rotate 30 degrees
+        dialRotation = (dialRotation + (30 * dialRotationDirection)) % 360;
+        if (dialRotation < 0) dialRotation += 360;
+        
+        // Update knob indicator visually with animated transition
+        mainDial.style.transform = 'scale(0.95)';
+        updateDialRotation(dialRotation);
+        
+        setTimeout(() => {
+          mainDial.style.transform = 'scale(1)';
+        }, 150);
+        
+        // Visual feedback
+        pulseActiveSpeakerDots();
+        createLeaves(2);
+        createDialRipple();
+      });
+      
+      // Make dragging work for dial too with improved behavior
+      let isDragging = false;
+      let isLongPress = false;
+      let longPressTimer = null;
+      
+      mainDial.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        isDragging = true;
+        
+        // Set up long press detection
+        longPressTimer = setTimeout(() => {
+          isLongPress = true;
+          mainDial.style.transform = 'scale(1.1)';
+          startContinuousRotation();
+        }, 500); // 500ms for long press
+        
+        // Visual feedback
+        mainDial.style.transform = 'scale(0.95)';
+      });
+      
+      document.addEventListener('mouseup', function() {
+        if (isDragging) {
+          clearTimeout(longPressTimer);
+          
+          if (isLongPress) {
+            stopContinuousRotation();
+            isLongPress = false;
+          }
+          
+          isDragging = false;
+          mainDial.style.transform = 'scale(1)';
+        }
+      });
+      
+      // Touch support for dial
+      mainDial.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        isDragging = true;
+        
+        // Set up long press detection
+        longPressTimer = setTimeout(() => {
+          isLongPress = true;
+          mainDial.style.transform = 'scale(1.1)';
+          startContinuousRotation();
+        }, 500); // 500ms for long press
+        
+        // Visual feedback
+        mainDial.style.transform = 'scale(0.95)';
+      });
+      
+      document.addEventListener('touchend', function(e) {
+        if (isDragging) {
+          e.preventDefault();
+          clearTimeout(longPressTimer);
+          
+          if (isLongPress) {
+            stopContinuousRotation();
+            isLongPress = false;
+          }
+          
+          isDragging = false;
+          mainDial.style.transform = 'scale(1)';
+        }
+      });
+      
+      // Make version selector interactive with enhanced effects
+      const versions = document.querySelectorAll('.version');
+      versions.forEach(version => {
+        version.addEventListener('click', function(e) {
+          e.preventDefault();
+          if (this.classList.contains('active')) return;
+          
+          versions.forEach(v => v.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Visual feedback
+          pulseActiveSpeakerDots();
+          createLeaves(3);
+          
+          // Screen flicker effect
+          const screens = document.querySelectorAll('.main-display, .mini-screen');
+          screens.forEach(screen => {
+            screen.style.opacity = '0.8';
+            setTimeout(() => {
+              screen.style.opacity = '1';
+            }, 100);
+          });
+          
+          // Different app mode based on version selected
+          const versionText = this.querySelector('span').textContent;
+          console.log(`Switching to ${versionText} mode`);
+          
+          // Update UI based on selected version
+          if (versionText === 'ECO') {
+            document.getElementById('low-energy').click();
+          } else if (versionText === 'PRO') {
+            document.getElementById('med-energy').click();
+          } else if (versionText === 'MAX') {
+            document.getElementById('high-energy').click();
+          }
+        });
+      });
+      
+      // Control strip functionality (Mine, Farm, Trade)
+      controlStrips.forEach(strip => {
+        strip.addEventListener('click', function(e) {
+          e.preventDefault();
+          // Remove active class from all strips in the same container
+          const container = this.closest('.control-strips');
+          container.querySelectorAll('.control-strip').forEach(s => s.classList.remove('active'));
+          // Add active class to clicked strip
+          this.classList.add('active');
+          
+          // Get mode from button text
+          const mode = this.textContent.trim();
+          console.log(`Switching to ${mode} mode`);
+          
+          // Update main display based on selected mode
+          const mainDisplayTitle = mainDisplay.querySelector('.tagline');
+          
+          // Update display title based on mode
+          if (mode === 'AUM') {
+            mainDisplayTitle.textContent = 'ASSETS UNDER MANAGEMENT';
+            createLeaves(3);
+          } else if (mode === 'FWAP') {
+            mainDisplayTitle.textContent = 'FUNDING WEIGHTED ASSET PROTOCOL';
+            createLeaves(3);
+          } else if (mode === 'YIELD') {
+            mainDisplayTitle.textContent = 'YIELD GENERATION PROTOCOL';
+            createLeaves(3);
+          } else if (mode === 'MINE') {
+            mainDisplayTitle.textContent = 'SUSTAINABLE MINING PROTOCOL';
+            createLeaves(3);
+          } else if (mode === 'FARM') {
+            mainDisplayTitle.textContent = 'LIQUIDITY FARMING PROTOCOL';
+            createLeaves(3);
+          } else if (mode === 'TRADE') {
+            mainDisplayTitle.textContent = 'HALAL TRADING PROTOCOL';
+            createLeaves(3);
+          }
+          
+          // Visual feedback
+          pulseActiveSpeakerDots();
+        });
+      });
+      
+      // Add functionality to mini-buttons
+      miniButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          // Get the button text
+          const buttonText = this.textContent.trim();
+          console.log(`${buttonText} button clicked`);
+          
+          // Visual effects
+          const parentScreen = this.closest('.mini-screen');
+          if (parentScreen) {
+            parentScreen.style.boxShadow = '0 0 30px rgba(76, 175, 80, 0.8)';
+            setTimeout(() => {
+              parentScreen.style.boxShadow = '';
+            }, 500);
+          }
+          
+          // Create leaves for visual effect
+          createLeaves(5);
+          pulseActiveSpeakerDots();
+        });
+      });
+      
+      // Make energy control buttons interactive
+      energyButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          energyButtons.forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Visual feedback
+          pulseActiveSpeakerDots();
+          createLeaves(2);
+          
+          // Adjust the brightness/contrast of screens based on energy level
+          const screens = document.querySelectorAll('.main-display, .mini-screen');
+          
+          if (this.id === 'low-energy') {
+            screens.forEach(screen => {
+              screen.style.filter = 'brightness(0.8) contrast(0.9)';
+              screen.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.15)';
+            });
+            videoPlayer.style.filter = 'brightness(0.9) contrast(0.95)';
+            
+            // Also update version selector to match energy level
+            versions.forEach(v => v.classList.remove('active'));
+            document.querySelector('.version:nth-child(1)').classList.add('active');
+          } else if (this.id === 'med-energy') {
+            screens.forEach(screen => {
+              screen.style.filter = 'brightness(1) contrast(1)';
+              screen.style.boxShadow = '0 0 15px rgba(76, 175, 80, 0.225)';
+            });
+            videoPlayer.style.filter = 'brightness(1.05) contrast(1.1)';
+            
+            // Also update version selector to match energy level
+            versions.forEach(v => v.classList.remove('active'));
+            document.querySelector('.version:nth-child(2)').classList.add('active');
+          } else if (this.id === 'high-energy') {
+            screens.forEach(screen => {
+              screen.style.filter = 'brightness(1.1) contrast(1.15)';
+              screen.style.boxShadow = '0 0 20px rgba(76, 175, 80, 0.375)';
+            });
+            videoPlayer.style.filter = 'brightness(1.15) contrast(1.2)';
+            
+            // Also update version selector to match energy level
+            versions.forEach(v => v.classList.remove('active'));
+            document.querySelector('.version:nth-child(3)').classList.add('active');
+          }
+        });
+      });
+      
+      // Make buttons interactive with enhanced effects
+      const allButtons = document.querySelectorAll('.button, .control-strip, .nav-button, .mini-button, .tool-button');
+      allButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          this.style.opacity = '0.7';
+          this.style.transform = 'scale(0.95)';
+          
+          setTimeout(() => {
+            this.style.opacity = '1';
+            this.style.transform = '';
+          }, 200);
+          
+          // Create leaves for visual effect
+          if (Math.random() > 0.6) {
+            createLeaves(1);
+          }
+        });
+      });
+      
+      // Theme toggle functionality
+      themeButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          themeButtons.forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Visual feedback
+          pulseActiveSpeakerDots();
+          createLeaves(3);
+          
+          // Apply theme
+          if (this.id === 'light-theme') {
+            document.body.classList.add('light-mode');
+            console.log("Switching to light theme");
+            
+            // Screen flicker effect for theme transition
+            const screens = document.querySelectorAll('.main-display, .mini-screen, .video-container');
+            screens.forEach(screen => {
+              screen.style.opacity = '0.7';
+              setTimeout(() => {
+                screen.style.opacity = '1';
+              }, 300);
+            });
+            
+            // Update accent color opacity for better visibility in light mode
+            document.querySelectorAll('.logo-text, .mini-logo-text').forEach(logo => {
+              logo.style.opacity = '0.85';
+            });
+            
+          } else {
+            document.body.classList.remove('light-mode');
+            console.log("Switching to dark theme");
+            
+            // Screen flicker effect for theme transition
+            const screens = document.querySelectorAll('.main-display, .mini-screen, .video-container');
+            screens.forEach(screen => {
+              screen.style.opacity = '0.7';
+              setTimeout(() => {
+                screen.style.opacity = '1';
+              }, 300);
+            });
+            
+            // Restore accent color opacity
+            document.querySelectorAll('.logo-text, .mini-logo-text').forEach(logo => {
+              logo.style.opacity = '1';
+            });
+          }
+        });
+      });
+      
+      // Falling leaves animation
+      function createLeaf() {
+        const leaf = document.createElement('div');
+        leaf.className = 'falling-leaf';
+        
+        // Random position across screen
+        const posX = Math.random() * window.innerWidth;
+        
+        // Set initial position
+        leaf.style.left = posX + 'px';
+        leaf.style.top = '-20px';
+        
+        // Set random animation duration
+        const duration = 5 + Math.random() * 10; // 5-15 seconds
+        leaf.style.animation = `leafFall ${duration}s linear forwards`;
+        
+        // Random rotation and scale
+        const rotation = Math.random() * 360;
+        const scale = 0.5 + Math.random() * 1.0; // 0.5 to 1.5
+        leaf.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+        
+        // Add to container
+        leavesContainer.appendChild(leaf);
+        
+        // Remove leaf after animation completes
+        setTimeout(() => {
+          if (leaf && leaf.parentNode) {
+            leaf.parentNode.removeChild(leaf);
+          }
+        }, duration * 1000);
+      }
+      
+      // Create multiple leaves
+      function createLeaves(count = 1) {
+        for (let i = 0; i < count; i++) {
+          setTimeout(() => {
+            createLeaf();
+          }, i * 300); // Stagger creation
+        }
+      }
+      
+      // Periodically create leaves for ambient effect
+      setInterval(() => {
+        if (Math.random() > 0.5) { // 50% chance to create a leaf (was 0.7)
+          createLeaf();
+        }
+      }, 2000); // Every 2 seconds (was 3000)
+      
+      // Initial leaves on page load
+      createLeaves(15); // More initial leaves (was 5)
+      
+      // Mouse proximity effects for screen elements
+      document.addEventListener('mousemove', function(e) {
+        const screens = document.querySelectorAll('.main-display, .mini-screen');
+        
+        screens.forEach(screen => {
+          const rect = screen.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          
+          // Calculate distance between cursor and screen center
+          const distX = e.clientX - centerX;
+          const distY = e.clientY - centerY;
+          const distance = Math.sqrt(distX * distX + distY * distY);
+          
+          // Only apply effect within certain range
+          if (distance < 300) {
+            // Calculate intensity based on proximity (closer = stronger)
+            const intensity = 1 - (distance / 300);
+            const glowSize = 10 + (intensity * 15); // 10px to 25px
+            const glowOpacity = 0.15 + (intensity * 0.225); // Reduced by 25% (0.2 to 0.15, 0.3 to 0.225)
+            
+            // Apply dynamic glow
+            screen.style.boxShadow = `0 0 ${glowSize}px rgba(76, 175, 80, ${glowOpacity})`;
+            
+            // Subtle tilt effect based on cursor position
+            const tiltX = (distY / 30) * intensity; // max 10 degrees
+            const tiltY = (-distX / 30) * intensity; // max 10 degrees
+            screen.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+            
+            // If very close, create a leaf occasionally
+            if (distance < 100 && Math.random() > 0.97) {
+              createLeaf();
+            }
+          } else {
+            // Reset to default when cursor is far away
+            screen.style.boxShadow = '';
+            screen.style.transform = '';
+          }
+        });
+      });
+      
+      // Set med-energy as default active button
+      const medEnergyBtn = document.getElementById('med-energy');
+      if (medEnergyBtn) {
+        medEnergyBtn.click();
+        medEnergyBtn.classList.add('active');
+      }
+      
+      // Set dark theme as default active button
+      const darkThemeBtn = document.getElementById('dark-theme');
+      if (darkThemeBtn) {
+        darkThemeBtn.classList.add('active');
+      }
+      
+      // Force some immediate visual effects
+      setTimeout(() => {
+        console.log("Creating initial visual effects...");
+        createLeaves(15);
+        pulseActiveSpeakerDots();
+        
+        // Pulse screen glow for initial visual impact
+        const screens = document.querySelectorAll('.main-display, .mini-screen');
+        screens.forEach(screen => {
+          screen.style.boxShadow = '0 0 30px rgba(76, 175, 80, 0.525)';
+          setTimeout(() => {
+            screen.style.boxShadow = '';
+          }, 800);
+        });
+      }, 500);
+      
+      // Initialize chart container - hide by default
+      const chartContainer = document.querySelector('.chart-container');
+      if (chartContainer) {
+        chartContainer.style.display = 'none';
+      }
+      
+      // Update click handlers for control strips
+      document.querySelectorAll('.control-strip').forEach(strip => {
+        strip.addEventListener('click', function(e) {
+          e.preventDefault();
+          const container = this.closest('.control-strips');
+          container.querySelectorAll('.control-strip').forEach(s => s.classList.remove('active'));
+          this.classList.add('active');
+          
+          const mode = this.textContent.trim();
+          console.log('Clicked mode:', mode);
+          
+          const mainDisplayTitle = mainDisplay.querySelector('.tagline');
+          
+          // Update display title based on mode
+          if (mode === 'AUM') {
+            mainDisplayTitle.textContent = 'ASSETS UNDER MANAGEMENT';
+            createLeaves(3);
+          } else if (mode === 'FWAP') {
+            mainDisplayTitle.textContent = 'FUNDING WEIGHTED ASSET PROTOCOL';
+            createLeaves(3);
+          } else if (mode === 'YIELD') {
+            mainDisplayTitle.textContent = 'YIELD GENERATION PROTOCOL';
+            createLeaves(3);
+          } else if (mode === 'MINE') {
+            mainDisplayTitle.textContent = 'SUSTAINABLE MINING PROTOCOL';
+            createLeaves(3);
+          } else if (mode === 'FARM') {
+            mainDisplayTitle.textContent = 'LIQUIDITY FARMING PROTOCOL';
+            createLeaves(3);
+          } else if (mode === 'TRADE') {
+            mainDisplayTitle.textContent = 'HALAL TRADING PROTOCOL';
+            createLeaves(3);
+          }
+          
+          // Visual feedback
+          pulseActiveSpeakerDots();
+        });
+      });
+
+      // Screen switching functionality
+      const screens = {
+        home: document.querySelector('.home-screen'),
+        greenfund: document.querySelector('.greenfund-screen'),
+        aum: document.querySelector('.aum-screen'),
+        fwap: document.querySelector('.fwap-screen'),
+        yield: document.querySelector('.yield-screen'),
+        mine: document.querySelector('.mine-screen'),
+        farm: document.querySelector('.farm-screen'),
+        trade: document.querySelector('.trade-screen')
+      };
+
+      function switchScreen(targetScreen) {
+        console.log('Switching to screen:', targetScreen); // Debug log
+        
+        // Visual feedback
+        createLeaves(3);
+        pulseActiveSpeakerDots();
+        
+        // Hide all screens
+        Object.values(screens).forEach(screen => {
+          screen.style.opacity = '0';
+          setTimeout(() => {
+            screen.style.display = 'none';
+          }, 300);
+        });
+        
+        // Show target screen
+        setTimeout(() => {
+          if (screens[targetScreen]) {
+            screens[targetScreen].style.display = 'flex';
+            setTimeout(() => {
+              screens[targetScreen].style.opacity = '1';
+            }, 50);
+          } else {
+            console.error('Target screen not found:', targetScreen);
+          }
+        }, 300);
+      }
+
+      // Handle Manage Funds button click
+      const manageFundsBtn = document.getElementById('manage-funds-btn');
+      if (manageFundsBtn) {
+        manageFundsBtn.addEventListener('click', function() {
+          console.log('Manage Funds button clicked'); // Debug log
+          switchScreen('greenfund');
+        });
+      } else {
+        console.error('Manage Funds button not found'); // Debug log
+      }
+
+      // Handle control strip clicks
+      document.querySelectorAll('.control-strip').forEach(strip => {
+        strip.addEventListener('click', function() {
+          const mode = this.textContent.toLowerCase();
+          switchScreen(mode);
+        });
+      });
+
+      // Initialize with home screen
+      switchScreen('home');
+
+      // Add click handlers for GreenBacks and GreenCompute buttons
+      const gbacksButton = document.querySelector('.mini-section:nth-of-type(1) .mini-action-btn');
+      const gctButton = document.querySelector('.mini-section:nth-of-type(2) .mini-action-btn');
+      
+      // Function to activate a specific mode
+      function activateMode(modeName) {
+        // Find and click the corresponding control strip
+        document.querySelectorAll('.control-strip').forEach(strip => {
+          if (strip.textContent.trim() === modeName) {
+            strip.click();
+            
+            // Visual feedback
+            createLeaves(3);
+            pulseActiveSpeakerDots();
+            
+            // Flash effect on the button's section
+            const section = strip.closest('.mini-section');
+            if (section) {
+              section.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
+              setTimeout(() => {
+                section.style.backgroundColor = '';
+              }, 300);
+            }
+          }
+        });
+      }
+
+      // GreenBacks button activates Yield mode
+      gbacksButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        activateMode('YIELD');
+      });
+
+      // GreenCompute button activates Mine mode
+      gctButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        activateMode('MINE');
+      });
+    });
+    
+    // Force immediate execution even if DOM content loaded event already fired
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      console.log("Page already loaded, initializing immediately...");
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+    }
+  </script>
+</body>
+</html>
