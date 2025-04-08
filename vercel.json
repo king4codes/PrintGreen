@@ -4,9 +4,21 @@
     {
       "src": "*.html",
       "use": "@vercel/static"
+    },
+    {
+      "src": "*.webm",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
+    {
+      "src": "/(.+\\.webm)",
+      "headers": {
+        "Content-Type": "video/webm",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "/$1"
